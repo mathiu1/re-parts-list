@@ -1,0 +1,301 @@
+import { HiOutlineDownload, HiOutlineExclamationCircle, HiOutlineCheckCircle, HiOutlineTable } from 'react-icons/hi';
+
+const DownloadProgressModal = ({ isOpen, totalImages, downloadedBytes, totalBytes, status, serverProgress, spreadsheetUrl, onCancel }) => {
+  if (!isOpen) return null;
+
+  const percentage = totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
+  const hasTotal = totalBytes > 0;
+
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 MB';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        background: 'rgba(15, 23, 42, 0.4)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        animation: 'fadeIn 0.2s ease-out',
+      }}
+    >
+      <div
+        className="glass-card animate-slide-up"
+        style={{
+          width: '100%',
+          maxWidth: '380px',
+          padding: '24px',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+          {status === 'preparing' || status === 'downloading' ? (
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: serverProgress?.type === 'Google Sheets' 
+                  ? 'rgba(16, 124, 65, 0.1)' 
+                  : 'rgba(59, 130, 246, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: serverProgress?.type === 'Google Sheets' ? '#107c41' : 'var(--accent)',
+                boxShadow: serverProgress?.type === 'Google Sheets' ? '0 0 20px rgba(16, 124, 65, 0.2)' : 'none',
+              }}
+            >
+              {serverProgress?.type === 'Google Sheets' ? (
+                <HiOutlineTable size={32} className="animate-pulse" />
+              ) : (
+                <HiOutlineDownload size={32} className={status === 'downloading' ? 'animate-bounce' : ''} />
+              )}
+            </div>
+          ) : status === 'complete' ? (
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(16, 185, 129, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--success)',
+              }}
+            >
+              <HiOutlineCheckCircle size={28} />
+            </div>
+          ) : (
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--danger)',
+              }}
+            >
+              <HiOutlineExclamationCircle size={28} />
+            </div>
+          )}
+        </div>
+
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>
+          {status === 'preparing' && 'Preparing Export...'}
+          {status === 'downloading' && 'Downloading File...'}
+          {status === 'complete' && 'Download Complete!'}
+          {status === 'error' && 'Download Failed'}
+        </h2>
+
+        {status === 'preparing' && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '20px', lineHeight: 1.5 }}>
+            {serverProgress?.type === 'Google Sheets'
+              ? (serverProgress.message || 'Formatting and syncing with your Google Drive...')
+              : (serverProgress?.type === 'Excel' 
+                  ? 'Generating high-performance report with embedded images.' 
+                  : 'Fetching images from cloud server and compressing into archive.')
+            }
+          </p>
+        )}
+
+        {(status === 'downloading' || status === 'complete') && (
+          <div style={{ marginBottom: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '12px',
+                background: 'var(--bg-primary)',
+                borderRadius: 'var(--radius-sm)',
+                marginBottom: '8px',
+                fontSize: '0.85rem',
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)' }}>Images Included</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{totalImages}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '12px',
+                background: 'var(--bg-primary)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.85rem',
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)' }}>Received Size</span>
+              <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                {hasTotal ? `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}` : formatBytes(downloadedBytes)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {(status === 'preparing' || status === 'downloading') && (
+          <div style={{ marginTop: '16px' }}>
+            <div
+              style={{
+                height: '14px',
+                width: '100%',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  width: status === 'preparing' 
+                    ? (serverProgress?.total > 0 ? `${(serverProgress.current / serverProgress.total) * 100}%` : '100%') 
+                    : hasTotal ? `${percentage}%` : '100%',
+                  background: serverProgress?.type === 'Google Sheets'
+                    ? 'linear-gradient(90deg, #0a5b31, #107c41, #1fb355)'
+                    : 'linear-gradient(90deg, #1d4ed8, #3b82f6, #60a5fa)',
+                  backgroundSize: '200% 100%',
+                  borderRadius: '12px',
+                  boxShadow: serverProgress?.type === 'Google Sheets'
+                    ? '0 0 10px rgba(16, 124, 65, 0.4)'
+                    : '0 0 10px rgba(59, 130, 246, 0.4)',
+                  animation: status === 'preparing' || (!hasTotal && status === 'downloading') 
+                    ? 'shimmer 1.5s infinite linear' 
+                    : 'none',
+                  transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginTop: '10px', 
+              fontSize: '0.85rem', 
+              color: 'var(--text-muted)',
+              padding: '0 4px'
+            }}>
+              <span>
+                {status === 'preparing' 
+                  ? (serverProgress?.message || `${serverProgress?.type || 'File'} Build Progress...`) 
+                  : 'Downloading to your device...'}
+              </span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                {status === 'downloading' && hasTotal ? `${percentage}%` : ''}
+                {status === 'preparing' && serverProgress?.total > 0 
+                  ? `${Math.round((serverProgress.current / serverProgress.total) * 100)}%` 
+                  : ''}
+              </span>
+            </div>
+
+            <button
+              onClick={onCancel}
+              style={{
+                marginTop: '24px',
+                width: '100%',
+                padding: '10px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: 'var(--danger)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+              }}
+            >
+              Cancel Export
+            </button>
+          </div>
+        )}
+
+        {status === 'complete' && (
+          <div style={{ marginTop: '16px' }}>
+            {serverProgress?.type === 'Google Sheets' && spreadsheetUrl && (
+              <a
+                href={spreadsheetUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #107c41, #1fb355)',
+                  color: 'white',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  boxShadow: '0 4px 15px rgba(16, 124, 65, 0.3)',
+                  transition: 'all 0.2s',
+                  textDecoration: 'none',
+                  marginBottom: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 124, 65, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 124, 65, 0.3)';
+                }}
+              >
+                <HiOutlineTable size={20} />
+                Open Google Sheet
+              </a>
+            )}
+            
+            <button
+              onClick={onCancel}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseOut={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DownloadProgressModal;
