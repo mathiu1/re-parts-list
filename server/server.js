@@ -36,7 +36,7 @@ app.use(
   })
 );
 
-require("./ping.js");
+//require("./ping.js");
 
 // 2. Global Rate Limiting: 100 requests per 15 minutes
 const limiter = rateLimit({
